@@ -1,4 +1,4 @@
 go-mapreduce
 ============
 
-MapReduce paradigm implementation in Golang
+MapReduce paradigm implementation in Golang.

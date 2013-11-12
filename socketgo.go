@@ -2,9 +2,10 @@ package main
 
 import (
 	//"code.google.com/p/go.net/websocket"
+	. "./socketio"
 	"fmt"
-	"net"
-	"os"
+	// "net"
+	// "os"
 )
 
 type T struct {
@@ -13,27 +14,12 @@ type T struct {
 }
 
 func main() {
-	var (
-		host          = "127.0.0.1"
-		port          = "9998"
-		remote        = host + ":" + port
-		msg    string = "Some message here"
-	)
-	con, error := net.Dial("tcp", remote)
-	defer con.Close()
-	if error != nil {
-		fmt.Printf("Host not found: %s\n", error)
-		os.Exit(1)
+	inChannel := make(chan []byte)
+	go Listen(inChannel, "127.0.0.2:9998", false)
+	Dial("127.0.0.2:9998", "127.0.0.1:9998", "This is my message.")
+	for {
+		for c := <-inChannel; len(c) != 0; c = <-inChannel {
+			fmt.Println(string(c))
+		}
 	}
-
-	in, error := con.Write([]byte(msg))
-	if error != nil {
-		fmt.Printf("Error sending data: %s, in: %d\n", error, in)
-		os.Exit(2)
-	}
-
-	fmt.Println("Connection OK")
-	// receive JSON type T
-	//var data T
-	//websocket.JSON.Receive(ws, &data)
 }
