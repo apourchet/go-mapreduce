@@ -8,7 +8,11 @@ import (
 )
 
 const (
-	TestType = "TestType"
+	TestType     = "TestType"
+	CSUG_IP      = "128.84.127.14"
+	CSUG_REMOTE  = "128.84.127.14:9998"
+	TEST_REMOTE1 = "127.0.0.1:3000"
+	TEST_REMOTE2 = "127.0.0.2:3000"
 )
 
 type Message struct {
