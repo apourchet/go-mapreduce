@@ -11,7 +11,7 @@ func main() {
 		host   = "127.0.0.1"
 		port   = "9998"
 		remote = host + ":" + port
-		data   = make([]byte, 1024)
+		data   = make([]byte, 5)
 	)
 	fmt.Println("Initiating server... (Ctrl-C to stop)")
 
@@ -24,7 +24,9 @@ func main() {
 	for {
 		var response string
 		var read = true
+		// fmt.Println("Here")
 		con, error := lis.Accept()
+		// fmt.Println("Here1")
 		if error != nil {
 			fmt.Printf("Error: Accepting data: %s\n", error)
 			os.Exit(2)
@@ -32,11 +34,13 @@ func main() {
 		fmt.Printf("=== New Connection received from: %s \n", con.RemoteAddr())
 		for read {
 			n, error := con.Read(data)
+			fmt.Println("Read 5 more bytes")
 			switch error {
 			case nil:
 				response = response + string(data[0:n])
 			default:
 				if error.Error() == "EOF" {
+					fmt.Println("EOF")
 					read = false
 				} else {
 					fmt.Printf("Error: Reading data : %s \n", error)
