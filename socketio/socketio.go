@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	Test         = "TestType"
-	IO           = "IOType"
-	Run          = "RunType"
-	MapJob       = "JobType"
-	ReduceJob    = "JobResultType"
+	Test         = "Test"
+	WorkerReady  = "WorkerReady"
+	IO           = "IO"
+	Run          = "Run"
+	MapJob       = "MapJob"
+	ReduceJob    = "ReduceJob"
 	MapResult    = "MapResult"
 	ReduceResult = "ReduceResult"
 

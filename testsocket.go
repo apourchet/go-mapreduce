@@ -17,7 +17,8 @@ func main() {
 	otherRemote := os.Args[2]
 	inChannel := make(chan []byte)
 	go Listen(inChannel, thisRemote, false)
-	Dial(thisRemote, otherRemote, "Worker message here.")
+	// Dial(thisRemote, otherRemote, "Worker message here.")
+	DialMessage(WorkerReadyMessage(thisRemote), otherRemote)
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
 			m := ParseMessage(string(c))

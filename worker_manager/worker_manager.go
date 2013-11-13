@@ -12,7 +12,11 @@ func MapResultMessage(fromRemote string) Message {
 
 func ReduceResultMessage(fromRemote string) Message {
 	// return Message{fromRemote, JobResultType, "", "ReduceResults here"}
-	return Message{}
+	return Message{fromRemote, ReduceResult, "", "ReduceResults here"}
+}
+
+func WorkerReadyMessage(fromRemote string) Message {
+	return Message{fromRemote, WorkerReady, "", "WorkerReady here"}
 }
 
 // Does everything the message wants the worker to do
@@ -22,15 +26,15 @@ func HandleMessage(fromRemote string, message Message) {
 	fmt.Println("Worker Manager handling message:\n" + message.ToString())
 	switch message.Type {
 	case Test:
-		fmt.Println(message.Message)
+		fmt.Println("Got a test message.")
 	case IO:
-		fmt.Println(message.Message)
+		fmt.Println("Got an IO message.")
 	case Run:
-		fmt.Println(message.Message)
+		fmt.Println("Got a Run message.")
 	case MapJob:
-		fmt.Println(message.Message)
+		fmt.Println("Got a MapJob message.")
 	case ReduceJob:
-		fmt.Println(message.Message)
+		fmt.Println("Got a ReduceJob message.")
 	default:
 		fmt.Println("Cannot handle that kind of message: " + message.Type)
 	}

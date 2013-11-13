@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "./controller"
 	. "./socketio"
 	"fmt"
 	"os"
@@ -12,13 +13,13 @@ func main() {
 		fmt.Println("Usage: <server remote>")
 		return
 	}
+	thisRemote := os.Args[1]
 	inChannel := make(chan []byte)
-	go Listen(inChannel, os.Args[1], false)
+	go Listen(inChannel, thisRemote, false)
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
 			m := ParseMessage(string(c))
-			fmt.Println("Message from worker: " + m.Message)
-			Dial(os.Args[1], m.Remote, "Server message here.")
+			HandleMessage(thisRemote, *m)
 		}
 	}
 }
