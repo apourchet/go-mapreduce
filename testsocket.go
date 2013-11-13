@@ -13,10 +13,11 @@ func main() {
 	}
 	inChannel := make(chan []byte)
 	go Listen(inChannel, os.Args[1], false)
-	Dial(os.Args[1], os.Args[2], "Client message here.")
+	Dial(os.Args[1], os.Args[2], "Worker message here.")
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			fmt.Println(string(c))
+			m := ParseMessage(string(c))
+			fmt.Println(m.Message)
 		}
 	}
 }

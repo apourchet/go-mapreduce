@@ -12,11 +12,12 @@ func main() {
 		return
 	}
 	inChannel := make(chan []byte)
-	go Listen(inChannel, TEST_REMOTE1, false)
+	go Listen(inChannel, os.Args[1], false)
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			fmt.Println(string(c))
-			Dial(TEST_REMOTE1, TEST_REMOTE2, "Server message here.")
+			m := ParseMessage(string(c))
+			fmt.Println("Message from worker: " + m.Message)
+			Dial(os.Args[1], m.Remote, "Server message here.")
 		}
 	}
 }
