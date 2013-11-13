@@ -8,13 +8,15 @@ import (
 )
 
 const (
-	TestType     = "TestType"
-	IOType       = "IOType"
-	RunType      = "RunType"
-	CSUG_IP      = "128.84.127.14"
-	CSUG_REMOTE  = "128.84.127.14:3000"
-	TEST_REMOTE1 = "127.0.0.1:3000"
-	TEST_REMOTE2 = "127.0.0.2:3000"
+	TestType      = "TestType"
+	IOType        = "IOType"
+	RunType       = "RunType"
+	JobType       = "JobType"
+	JobResultType = "JobResultType"
+	CSUG_IP       = "128.84.127.14"
+	CSUG_REMOTE   = "128.84.127.14:3000"
+	TEST_REMOTE1  = "127.0.0.1:3000"
+	TEST_REMOTE2  = "127.0.0.2:3000"
 )
 
 type Message struct {
@@ -68,7 +70,6 @@ func Dial(fromRemote, toRemote, msg string) {
 	message := Message{}
 	message.Remote = fromRemote
 	message.Type = TestType
-	message.Id = "-1"
 	message.Error = ""
 	message.Message = msg
 	con, err := net.Dial("tcp", toRemote)

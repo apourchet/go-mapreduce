@@ -23,20 +23,20 @@ func RmFileMessage(fromRemote, fileName string) Message {
 }
 
 func MapJobMessage(fromRemote string) Message {
-
+	return Message{fromRemote, JobResultType, "", ""}
 }
 
 func CombineJobMessage(fromRemote string) Message {
-
+	return Message{fromRemote, JobResultType, "", ""}
 }
 
 func ReduceJobMessage(fromRemote string) Message {
-
+	return Message{fromRemote, JobResultType, "", ""}
 }
 
 // Does everything the message wants the worker to do
 // and creates a response to the controller that gives 
 // the status of the job
 func HandleMessage(message Message) {
-	os.OpenFile("foo.txt", os.O_RDWR|os.O_APPEND, 0660)
+	// os.OpenFile("foo.txt", os.O_RDWR|os.O_APPEND, 0660)
 }
