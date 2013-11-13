@@ -9,8 +9,10 @@ import (
 
 const (
 	TestType     = "TestType"
+	IOType       = "IOType"
+	RunType      = "RunType"
 	CSUG_IP      = "128.84.127.14"
-	CSUG_REMOTE  = "128.84.127.14:9998"
+	CSUG_REMOTE  = "128.84.127.14:3000"
 	TEST_REMOTE1 = "127.0.0.1:3000"
 	TEST_REMOTE2 = "127.0.0.2:3000"
 )
@@ -18,13 +20,12 @@ const (
 type Message struct {
 	Remote  string
 	Type    string
-	Id      string
 	Error   string
 	Message string
 }
 
 func (m *Message) ToString() string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", m.Remote, m.Type, m.Id, m.Error, m.Message)
+	return fmt.Sprintf("%s#|#%s#|#%s#|#%s", m.Remote, m.Type, m.Error, m.Message)
 }
 
 func GetRemote(host, port string) string {
@@ -32,8 +33,8 @@ func GetRemote(host, port string) string {
 }
 
 func ParseMessage(messageString string) *Message {
-	fstSplit := strings.Split(messageString, "|")
-	msg := Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3], fstSplit[4]}
+	fstSplit := strings.Split(messageString, "#|#")
+	msg := Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}
 	return &msg
 }
 
@@ -70,6 +71,20 @@ func Dial(fromRemote, toRemote, msg string) {
 	message.Id = "-1"
 	message.Error = ""
 	message.Message = msg
+	con, err := net.Dial("tcp", toRemote)
+	if err != nil {
+		fmt.Printf("Host not found: %s\n", err)
+		return
+	}
+	defer con.Close()
+	fmt.Println("Dialing remote: " + toRemote)
+	in, err := con.Write([]byte(message.ToString()))
+	if err != nil {
+		fmt.Printf("Error sending data: %s, in: %d\n", err, in)
+	}
+}
+
+func DialMessage(message Message, toRemote string) {
 	con, err := net.Dial("tcp", toRemote)
 	if err != nil {
 		fmt.Printf("Host not found: %s\n", err)
