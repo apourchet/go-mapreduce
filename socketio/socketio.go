@@ -71,11 +71,11 @@ func Dial(fromRemote, toRemote, msg string) {
 	message.Error = ""
 	message.Message = msg
 	con, err := net.Dial("tcp", toRemote)
-	defer con.Close()
 	if err != nil {
 		fmt.Printf("Host not found: %s\n", err)
 		return
 	}
+	defer con.Close()
 	fmt.Println("Dialing remote: " + toRemote)
 	in, err := con.Write([]byte(message.ToString()))
 	if err != nil {
