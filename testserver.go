@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	fmt.Println("\n******Server initializing******")
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: <server remote>")
 		return

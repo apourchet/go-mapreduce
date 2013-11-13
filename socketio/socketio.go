@@ -8,19 +8,22 @@ import (
 )
 
 const (
-	TestType      = "TestType"
-	IOType        = "IOType"
-	RunType       = "RunType"
-	JobType       = "JobType"
-	JobResultType = "JobResultType"
-	CSUG_IP       = "128.84.127.14"
-	CSUG_REMOTE   = "128.84.127.14:9998"
-	TEST_REMOTE1  = "127.0.0.1:9998"
-	TEST_REMOTE2  = "127.0.0.2:9998"
+	Test         = "TestType"
+	IO           = "IOType"
+	Run          = "RunType"
+	MapJob       = "JobType"
+	ReduceJob    = "JobResultType"
+	MapResult    = "MapResult"
+	ReduceResult = "ReduceResult"
+
+	CSUG_IP      = "128.84.127.14"
+	CSUG_REMOTE  = "128.84.127.14:9998"
+	TEST_REMOTE1 = "127.0.0.1:9998"
+	TEST_REMOTE2 = "127.0.0.2:9998"
 )
 
 var (
-	Verbosity = 1
+	Verbosity = 0
 )
 
 type Message struct {
@@ -79,7 +82,7 @@ func Listen(inChannel chan []byte, remote string, closeChannel bool) {
 func Dial(fromRemote, toRemote, msg string) {
 	message := Message{}
 	message.Remote = fromRemote
-	message.Type = TestType
+	message.Type = Test
 	message.Error = ""
 	message.Message = msg
 	con, err := net.Dial("tcp", toRemote)

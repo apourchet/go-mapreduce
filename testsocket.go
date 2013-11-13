@@ -2,22 +2,26 @@ package main
 
 import (
 	. "./socketio"
+	. "./worker_manager"
 	"fmt"
 	"os"
 )
 
 func main() {
+	fmt.Println("\n******Worker initializing******")
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: <worker remote> <server remote>")
 		return
 	}
+	thisRemote := os.Args[1]
+	otherRemote := os.Args[2]
 	inChannel := make(chan []byte)
-	go Listen(inChannel, os.Args[1], false)
-	Dial(os.Args[1], os.Args[2], "Worker message here.")
+	go Listen(inChannel, thisRemote, false)
+	Dial(thisRemote, otherRemote, "Worker message here.")
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
 			m := ParseMessage(string(c))
-			fmt.Println(m.Message)
+			HandleMessage(thisRemote, *m)
 		}
 	}
 }
