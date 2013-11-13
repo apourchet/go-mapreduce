@@ -3,6 +3,7 @@ package controller
 import (
 	. "../socketio"
 	"fmt"
+	"os"
 )
 
 // Messages that the Worker Manager will handle
@@ -19,7 +20,7 @@ func CreateFileMessage(fromRemote, fileName string) Message {
 }
 
 func AppendFileMessage(fromRemote, fileName, additionalContent string) Message {
-	return Message{fromRemote, IO, "", "cmd:append#&#fileName:" + fileName + "#&#" + additionalContent}
+	return Message{fromRemote, IO, "", "cmd:append#&#fileName:" + fileName + "#&#content:" + additionalContent}
 }
 
 func RmFileMessage(fromRemote, fileName string) Message {
@@ -36,14 +37,14 @@ func ReduceJobMessage(fromRemote string) Message {
 
 // Handles the message from a Worker after sending a job to it
 func HandleMessage(fromRemote string, message Message) {
-	fmt.Println("Controller handling message:\n" + message.ToString())
+	// fmt.Println("Controller handling message:\n" + message.ToString())
 	switch message.Type {
 	case Test:
 		fmt.Println("Handling Test message")
 		DialMessage(TestMessage(fromRemote, "Response to test message"), message.Remote)
-		// Dial(thisRemote, m.Remote, "Server message here.")
 	case WorkerReady:
 		fmt.Println("Worker is ready on remote: " + message.Remote)
+		HandleNewWorker(fromRemote, message)
 	case MapResult:
 		fmt.Println("Map Results have arrived!")
 	case ReduceResult:
@@ -53,6 +54,10 @@ func HandleMessage(fromRemote string, message Message) {
 	}
 }
 
-func HandleNewWorker(message Message) {
-
+func HandleNewWorker(fromRemote string, message Message) {
+	os.Mkdir("worker_"+message.Remote, os.ModePerm)
+	DialMessage(CreateFileMessage(fromRemote, "data/testFile.txt"), message.Remote)
+	DialMessage(AppendFileMessage(fromRemote, "data/testFile.txt", "This is the first append!\n"), message.Remote)
+	DialMessage(AppendFileMessage(fromRemote, "data/testFile.txt", "This is the second append!\n"), message.Remote)
+	DialMessage(RmFileMessage(fromRemote, "data/testFile.txt"), message.Remote)
 }
