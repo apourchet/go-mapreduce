@@ -14,9 +14,9 @@ const (
 	JobType       = "JobType"
 	JobResultType = "JobResultType"
 	CSUG_IP       = "128.84.127.14"
-	CSUG_REMOTE   = "128.84.127.14:3000"
-	TEST_REMOTE1  = "127.0.0.1:3000"
-	TEST_REMOTE2  = "127.0.0.2:3000"
+	CSUG_REMOTE   = "128.84.127.14:9998"
+	TEST_REMOTE1  = "127.0.0.1:9998"
+	TEST_REMOTE2  = "127.0.0.2:9998"
 )
 
 type Message struct {
