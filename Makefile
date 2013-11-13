@@ -1,3 +1,7 @@
+.PHONY: all
+all: 
+	cd executables && go build ../testserver.go && go build ../testsocket.go
+	
 .PHONY: controller
 controller:
 	cd executables && go build ../testserver.go

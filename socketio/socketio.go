@@ -19,11 +19,19 @@ const (
 	TEST_REMOTE2  = "127.0.0.2:9998"
 )
 
+var (
+	Verbosity = 1
+)
+
 type Message struct {
 	Remote  string
 	Type    string
 	Error   string
 	Message string
+}
+
+func SetVerbosity(v int) {
+	Verbosity = v
 }
 
 func (m *Message) ToString() string {
@@ -47,7 +55,9 @@ func Listen(inChannel chan []byte, remote string, closeChannel bool) {
 		return
 	}
 	defer lis.Close()
-	fmt.Println("Listening on remote: " + remote)
+	if Verbosity > 0 {
+		fmt.Println("Listening on remote: " + remote)
+	}
 	data := make([]byte, 5)
 	for {
 		output := bytes.NewBuffer([]byte{})
@@ -78,7 +88,9 @@ func Dial(fromRemote, toRemote, msg string) {
 		return
 	}
 	defer con.Close()
-	fmt.Println("Dialing remote: " + toRemote)
+	if Verbosity > 0 {
+		fmt.Println("Dialing remote: " + toRemote)
+	}
 	in, err := con.Write([]byte(message.ToString()))
 	if err != nil {
 		fmt.Printf("Error sending data: %s, in: %d\n", err, in)
@@ -92,7 +104,9 @@ func DialMessage(message Message, toRemote string) {
 		return
 	}
 	defer con.Close()
-	fmt.Println("Dialing remote: " + toRemote)
+	if Verbosity > 0 {
+		fmt.Println("Dialing remote: " + toRemote)
+	}
 	in, err := con.Write([]byte(message.ToString()))
 	if err != nil {
 		fmt.Printf("Error sending data: %s, in: %d\n", err, in)
