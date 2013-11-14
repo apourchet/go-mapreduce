@@ -2,6 +2,7 @@ package controller
 
 import (
 	. "../socketio"
+	"bufio"
 	"fmt"
 	"os"
 )
@@ -11,28 +12,32 @@ func TestMessage(fromRemote, msg string) Message {
 	return Message{fromRemote, Test, "", msg}
 }
 
-func RunMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, Run, "", "fileName:" + fileName}
+func CmdJobMessage(fromRemote, fileName string) Message {
+	return Message{fromRemote, CmdJob, "", "fileName#@#" + fileName}
+}
+
+func MakeDirMessage(fromRemote, dirName string) Message {
+	return Message{fromRemote, IO, "", "cmd#@#mkdir#&#dirName#@#" + dirName}
 }
 
 func CreateFileMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, IO, "", "cmd:create#&#fileName:" + fileName}
+	return Message{fromRemote, IO, "", "cmd#@#create#&#fileName#@#" + fileName}
 }
 
 func AppendFileMessage(fromRemote, fileName, additionalContent string) Message {
-	return Message{fromRemote, IO, "", "cmd:append#&#fileName:" + fileName + "#&#content:" + additionalContent}
+	return Message{fromRemote, IO, "", "cmd#@#append#&#fileName#@#" + fileName + "#&#content#@#" + additionalContent}
 }
 
 func RmFileMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, IO, "", "cmd:remove#&#fileName:" + fileName}
+	return Message{fromRemote, IO, "", "cmd#@#remove#&#fileName#@#" + fileName}
 }
 
-func MapJobMessage(fromRemote string) Message {
-	return Message{fromRemote, MapResult, "", "Map Job here"}
+func MapJobMessage(fromRemote, fileName string) Message {
+	return Message{fromRemote, MapJob, "", "fileName#@#" + fileName}
 }
 
 func ReduceJobMessage(fromRemote string) Message {
-	return Message{fromRemote, ReduceResult, "", "Reduce Job here"}
+	return Message{fromRemote, ReduceJob, "", "Reduce Job here"}
 }
 
 // Handles the message from a Worker after sending a job to it
@@ -55,9 +60,38 @@ func HandleMessage(fromRemote string, message Message) {
 }
 
 func HandleNewWorker(fromRemote string, message Message) {
-	os.Mkdir("worker_"+message.Remote, os.ModePerm)
-	DialMessage(CreateFileMessage(fromRemote, "data/testFile.txt"), message.Remote)
-	DialMessage(AppendFileMessage(fromRemote, "data/testFile.txt", "This is the first append!\n"), message.Remote)
-	DialMessage(AppendFileMessage(fromRemote, "data/testFile.txt", "This is the second append!\n"), message.Remote)
-	DialMessage(RmFileMessage(fromRemote, "data/testFile.txt"), message.Remote)
+	workerDir := getWorkerDir(message)
+	fmt.Println("Making dir: " + workerDir)
+	DialMessage(MakeDirMessage(fromRemote, workerDir), message.Remote)
+	SendFileWorker(fromRemote, workerDir+"testscript.go", message)
+	DialMessage(MapJobMessage(fromRemote, workerDir+"testscript.go"), message.Remote)
+}
+
+func HandleMapResults(fromRemote string, message Message) {
+
+}
+
+func getWorkerDir(message Message) string {
+	return "worker_" + message.Remote + "/"
+}
+
+func SendFileWorker(fromRemote, fileName string, message Message) {
+	fi, err := os.Open(fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := fi.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	reader := bufio.NewReader(fi)
+	DialMessage(CreateFileMessage(fromRemote, fileName), message.Remote)
+	for buffer, _, err := reader.ReadLine(); err == nil; buffer, _, err = reader.ReadLine() {
+		DialMessage(AppendFileMessage(fromRemote, fileName, string(buffer)+"\n"), message.Remote)
+	}
+}
+
+func RemoveFileWorker(fromRemote, fileName string, message Message) {
+	DialMessage(RmFileMessage(fromRemote, getWorkerDir(message)+fileName), message.Remote)
 }

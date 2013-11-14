@@ -11,7 +11,7 @@ const (
 	Test         = "Test"
 	WorkerReady  = "WorkerReady"
 	IO           = "IO"
-	Run          = "Run"
+	CmdJob       = "CmdJob"
 	MapJob       = "MapJob"
 	ReduceJob    = "ReduceJob"
 	MapResult    = "MapResult"
