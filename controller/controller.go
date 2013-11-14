@@ -7,39 +7,6 @@ import (
 	"os"
 )
 
-// Messages that the Worker Manager will handle
-func TestMessage(fromRemote, msg string) Message {
-	return Message{fromRemote, Test, "", msg}
-}
-
-func CmdJobMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, CmdJob, "", "fileName#@#" + fileName}
-}
-
-func MakeDirMessage(fromRemote, dirName string) Message {
-	return Message{fromRemote, IO, "", "cmd#@#mkdir#&#dirName#@#" + dirName}
-}
-
-func CreateFileMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, IO, "", "cmd#@#create#&#fileName#@#" + fileName}
-}
-
-func AppendFileMessage(fromRemote, fileName, additionalContent string) Message {
-	return Message{fromRemote, IO, "", "cmd#@#append#&#fileName#@#" + fileName + "#&#content#@#" + additionalContent}
-}
-
-func RmFileMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, IO, "", "cmd#@#remove#&#fileName#@#" + fileName}
-}
-
-func MapJobMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, MapJob, "", "fileName#@#" + fileName}
-}
-
-func ReduceJobMessage(fromRemote string) Message {
-	return Message{fromRemote, ReduceJob, "", "Reduce Job here"}
-}
-
 // Handles the message from a Worker after sending a job to it
 func HandleMessage(fromRemote string, message Message) {
 	// fmt.Println("Controller handling message:\n" + message.ToString())
@@ -48,18 +15,18 @@ func HandleMessage(fromRemote string, message Message) {
 		fmt.Println("Handling Test message")
 		DialMessage(TestMessage(fromRemote, "Response to test message"), message.Remote)
 	case WorkerReady:
-		fmt.Println("Worker is ready on remote: " + message.Remote)
 		HandleNewWorker(fromRemote, message)
 	case MapResult:
-		fmt.Println("Map Results have arrived!")
+		HandleMapResults(fromRemote, message)
 	case ReduceResult:
-		fmt.Println("Reduce Results have arrived!")
+		HandleReduceResults(fromRemote, message)
 	default:
 		fmt.Println("Cannot handle that kind of message: " + message.Type)
 	}
 }
 
 func HandleNewWorker(fromRemote string, message Message) {
+	fmt.Println("Worker is ready on remote: " + message.Remote)
 	workerDir := getWorkerDir(message)
 	fmt.Println("Making dir: " + workerDir)
 	DialMessage(MakeDirMessage(fromRemote, workerDir), message.Remote)
@@ -68,7 +35,13 @@ func HandleNewWorker(fromRemote string, message Message) {
 }
 
 func HandleMapResults(fromRemote string, message Message) {
+	fmt.Println("Map Results have arrived!")
+	// m := GetMessageMap(message)
+	fmt.Println(message.Message)
+}
 
+func HandleReduceResults(fromRemote string, message Message) {
+	fmt.Println("Reduce Results have arrived!")
 }
 
 func getWorkerDir(message Message) string {

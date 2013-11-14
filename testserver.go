@@ -19,7 +19,7 @@ func main() {
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
 			m := ParseMessage(string(c))
-			HandleMessage(thisRemote, *m)
+			go HandleMessage(thisRemote, *m)
 		}
 	}
 }

@@ -5,22 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 )
-
-// Messages that the Controller will be able to handle
-func MapResultMessage(fromRemote, results string) Message {
-	return Message{fromRemote, MapResult, "", results}
-}
-
-func ReduceResultMessage(fromRemote, results string) Message {
-	// return Message{fromRemote, JobResultType, "", "ReduceResults here"}
-	return Message{fromRemote, ReduceResult, "", "ReduceResults here"}
-}
-
-func WorkerReadyMessage(fromRemote string) Message {
-	return Message{fromRemote, WorkerReady, "", "WorkerReady here"}
-}
 
 // Does everything the message wants the worker to do
 // and creates a response to the controller that gives 
@@ -43,19 +28,9 @@ func HandleMessage(fromRemote string, message Message) {
 	}
 }
 
-func getMessageMap(message Message) map[string]string {
-	split := strings.Split(message.Message, "#&#")
-	m := make(map[string]string)
-	for _, s := range split {
-		split2 := strings.Split(s, "#@#")
-		m[split2[0]] = split2[1]
-	}
-	return m
-}
-
 func HandleIOMessage(message Message) {
 	fmt.Println("Got an IO message.")
-	messageMap := getMessageMap(message)
+	messageMap := GetMessageMap(message)
 	switch messageMap["cmd"] {
 	case "mkdir":
 		fmt.Println("Making dir: " + messageMap["dirName"])
@@ -76,7 +51,7 @@ func HandleIOMessage(message Message) {
 }
 
 func HandleMapMessage(fromRemote string, message Message) {
-	m := getMessageMap(message)
+	m := GetMessageMap(message)
 	fmt.Println("Got a MapJob message: " + m["fileName"])
 	go func() {
 		o, _ := exec.Command("go", "run", m["fileName"]).Output()
