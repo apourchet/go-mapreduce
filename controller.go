@@ -1,13 +1,23 @@
 package mapreduce
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 )
 
+type KVPair struct {
+	Key, Value string
+}
+
+type KVsPairs struct {
+	Key    string
+	Values []string
+}
+
 type Controller struct {
-	Remote string
+	Remote        string
+	IdleWorkers   []string
+	MapWorkers    []string
+	ReduceWorkers []string
 }
 
 // Handles the message from a Worker after sending a job to it
@@ -16,32 +26,65 @@ func (c *Controller) HandleMessage(message Message) {
 	switch message.Type {
 	case Test:
 		fmt.Println("Handling Test message")
-		DialMessage(TestMessage(fromRemote, "Response to test message"), message.Remote)
+		response := TestMessage(c.Remote, "Response to test message")
+		DialMessage(response, message.Remote)
 	case WorkerReady:
-		HandleNewWorker(fromRemote, message)
+		c.HandleNewWorker(message)
 	case MapResult:
-		HandleMapResults(fromRemote, message)
+		c.HandleMapResults(message)
 	case ReduceResult:
-		HandleReduceResults(fromRemote, message)
+		c.HandleReduceResults(message)
 	default:
 		fmt.Println("Cannot handle that kind of message: " + message.Type)
 	}
 }
 
-func (c *Controller) HandleNewWorker(fromRemote string, message Message) {
+func (c *Controller) HandleNewWorker(message Message) {
 	fmt.Println("Worker is ready on remote: " + message.Remote)
-	workerDir := getWorkerDir(message)
+	c.IdleWorkers = append(c.IdleWorkers, message.Remote)
 }
 
-func (c *Controller) HandleMapResults(fromRemote string, message Message) {
+func (c *Controller) HandleMapResults(message Message) {
 	fmt.Println("Map Results have arrived!")
 }
 
-func (c *Controller) HandleReduceResults(fromRemote string, message Message) {
+func (c *Controller) HandleReduceResults(message Message) {
 	fmt.Println("Reduce Results have arrived!")
 	fmt.Println(message.Message)
 }
 
-func getWorkerDir(message Message) string {
-	return "worker_" + message.Remote + "/"
+func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
+	results := []KVPair{}
+
+	return results
+}
+
+func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KVPair {
+	results := []KVPair{}
+
+	return results
+}
+
+// Combines the Key-Value pairs with the same keys to form an array of values
+func Combine(kvPairs []KVPair) map[string][]string {
+	results := make(map[string][]string)
+	for _, pair := range kvPairs {
+		if val, presence := results[pair.Key]; presence {
+			results[pair.Key] = append(val, pair.Value)
+		} else {
+			results[pair.Key] = []string{pair.Value}
+		}
+	}
+	return results
+}
+
+func (c *Controller) MapReduce(kvPairs []KVPair, mapJob, reduceJob string) map[string]string {
+	mapped := c.Map(kvPairs, mapJob)
+	combined := Combine(mapped)
+	reduced := c.Reduce(combined, reduceJob)
+	result := make(map[string]string)
+	for _, pair := range reduced {
+		result[pair.Key] = pair.Value
+	}
+	return result
 }

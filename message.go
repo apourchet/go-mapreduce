@@ -1,15 +1,22 @@
 package mapreduce
 
 import (
-	"fmt"
+	"strings"
 )
 
 const (
-	Test         = "Test"
-	WorkerReady  = "WorkerReady"
-	CmdJob       = "CmdJob"
-	MapJob       = "MapJob"
-	ReduceJob    = "ReduceJob"
+	Test        = "Test"
+	WorkerReady = "WorkerReady"
+
+	MapJob    = "MapJob"
+	ReduceJob = "ReduceJob"
+
+	MapperReady  = "MapperReady"
+	ReducerReady = "ReducerReady"
+
+	MapRun    = "MapRun"
+	ReduceRun = "ReduceRun"
+
 	MapResult    = "MapResult"
 	ReduceResult = "ReduceResult"
 )
@@ -29,34 +36,52 @@ func (m *Message) ToString() string {
 	return m.Remote + SEPARATOR + m.Type + SEPARATOR + m.Error + SEPARATOR + m.Message
 	// return fmt.Sprintf("%s#|#%s#|#%s#|#%s", m.Remote, m.Type, m.Error, m.Message)
 }
-func ParseMessage(messageString string) *Message {
+func ParseMessage(messageString string) Message {
 	fstSplit := strings.Split(messageString, SEPARATOR)
-	msg := Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}
-	return &msg
+	return Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}
 }
 
+// Test message
 func TestMessage(fromRemote, msg string) Message {
 	return Message{fromRemote, Test, "", msg}
 }
 
-// Messages handled by the Workers
-func (c *Controller) MapJobMessage(fromRemote, fileName string) Message {
-	return Message{fromRemote, MapJob, "", fileName}
+// Handled by Worker
+// Sent by Controller
+func (c *Controller) MapJobMessage(fileName string) Message {
+	return Message{c.Remote, MapJob, "", fileName}
 }
 
-func (c *Controller) ReduceJobMessage(fromRemote string) Message {
-	return Message{fromRemote, ReduceJob, "", "Reduce Job here"}
+func (c *Controller) ReduceJobMessage(fileName string) Message {
+	return Message{c.Remote, ReduceJob, "", "Reduce Job here"}
 }
 
-// Messages that the Controller will be able to handle
-func (w *Worker) MapResultMessage(fromRemote, results string) Message {
-	return Message{fromRemote, MapResult, "", results}
+func (c *Controller) MapRunMessage(fileName string) Message {
+	return Message{c.Remote, MapRun, "", fileName}
 }
 
-func (w *Worker) ReduceResultMessage(fromRemote, results string) Message {
-	return Message{fromRemote, ReduceResult, "", "ReduceResults here"}
+func (c *Controller) ReduceRunMessage(fileName string) Message {
+	return Message{c.Remote, ReduceRun, "", "Reduce Job here"}
 }
 
-func (w *Worker) WorkerReadyMessage(fromRemote string) Message {
-	return Message{fromRemote, WorkerReady, "", "WorkerReady here"}
+// Handled by Controller
+// Sent by Worker
+func (w *Worker) MapperReady() Message {
+	return Message{w.Remote, MapperReady, "", "Mapper is Ready"}
+}
+
+func (w *Worker) ReducerReady() Message {
+	return Message{w.Remote, ReducerReady, "", "Reducer is Ready"}
+}
+
+func (w *Worker) MapResultMessage(results string) Message {
+	return Message{w.Remote, MapResult, "", results}
+}
+
+func (w *Worker) ReduceResultMessage(results string) Message {
+	return Message{w.Remote, ReduceResult, "", "ReduceResults here"}
+}
+
+func (w *Worker) WorkerReadyMessage() Message {
+	return Message{w.Remote, WorkerReady, "", "WorkerReady here"}
 }
