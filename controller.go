@@ -2,6 +2,7 @@ package mapreduce
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -11,14 +12,17 @@ type Controller struct {
 	MapWorkers    []string
 	ReduceWorkers []string
 
-	UncompMaps    map[KVPair]bool
-	UncompReduces map[KVPair]bool
+	UncompMaps    map[string]bool
+	UncompReduces map[string]bool
+
+	FinishedMaps    []KVPair
+	FinishedReduces []KVPair
 }
 
 func NewController(serverRemote string) *Controller {
-	a := make(map[KVPair]bool)
-	b := make(map[KVPair]bool)
-	return &Controller{serverRemote, []string{}, []string{}, []string{}, a, b}
+	a := make(map[string]bool)
+	b := make(map[string]bool)
+	return &Controller{serverRemote, []string{}, []string{}, []string{}, a, b, []KVPair{}, []KVPair{}}
 }
 
 // Handles the message from a Worker after sending a job to it
@@ -59,11 +63,13 @@ func (c *Controller) HandleMapResults(message Message) {
 	if message.Error != "" {
 		return
 	}
-	// pairs := ParseKVPairs(message.Message)
-	// TODO Remove the corresponding KVPair from the uncompleted list
-	for key, _ := range c.UncompMaps {
-		delete(c.UncompMaps, key)
-		break
+	arr := strings.Split(message.Message, ARGSEP)
+	jobId := arr[0]
+	delete(c.UncompMaps, jobId)
+
+	pairs := ParseKVPairs(arr[1])
+	for _, pair := range pairs {
+		c.FinishedMaps = append(c.FinishedMaps, pair)
 	}
 }
 
@@ -78,23 +84,24 @@ func (c *Controller) HandleReduceResults(message Message) {
 
 // MapReduce starts here
 func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
-	fmt.Println("Mapping!")
+	fmt.Println("Mapping: " + mapJob)
 	// Setup the uncompleted maps
 	for _, pair := range kvPairs {
-		c.UncompMaps[pair] = true
+		c.UncompMaps[pair.Key] = true
 	}
+
 	results := []KVPair{}
 	// For each task
 	for _, workerRemote := range c.IdleWorkers {
 		// Send a worker the map initialization job
-		message := c.MapJobMessage(mapJob)
+		message := c.MapJobMessage(ReadFile(mapJob))
 		DialMessage(message, workerRemote)
 	}
 	for len(c.MapWorkers) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 	for _, pair := range kvPairs {
-		message := c.MapRunMessage(mapJob, pair.Key, pair.Value)
+		message := c.MapRunMessage(pair.Key, pair.Value)
 		DialMessage(message, c.MapWorkers[0])
 	}
 	for len(c.UncompMaps) != 0 {

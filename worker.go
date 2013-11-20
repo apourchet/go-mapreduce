@@ -34,7 +34,8 @@ func (w *Worker) HandleMessage(message Message) {
 func (w *Worker) HandleMapJob(message Message) {
 	fmt.Println("Handling Map Job")
 	// TODO Handle the map job here, i.e save the script onto the system in the designated folder
-
+	content := message.Message
+	WriteFile(w.GetDirectory()+"/mapper.go", content)
 	// Respond to the server saying that the worker is ready to map
 	fmt.Println("MapperReady response sent!")
 	response := w.MapperReady()
@@ -45,16 +46,17 @@ func (w *Worker) HandleMapRun(message Message) {
 	fmt.Println("Handling Map Run")
 	// Handle the run here
 	arr := strings.Split(message.Message, ARGSEP)
-	fileName := w.GetDirectory() + "/" + arr[0]
-	key := arr[1]
-	value := arr[2]
-	pairs := []KVPair{{"2", "DEFAULT"}}
-	// TODO Run the script using this key-value pair && convert the resulting kv pairs to a string
-	exec.Command("go", "run", fileName, key, value)
+	fileName := w.GetDirectory() + "/mapper.go"
+	jobId := arr[0] // Something like the job number or something
+	// value := arr[1] // The thing that needs to be reduced
+
+	output, _ := exec.Command("go", "run", fileName).Output()
+	fmt.Println("Output of " + fileName + " is " + string(output))
+	pairs := ParseKVPairs(string(output)) // Should be a parsing of the output
 
 	// TODO Respond to the server with the result of the map
 	fmt.Println("MapperResults sent!")
-	response := w.MapResultMessage(KVPairsToString(pairs))
+	response := w.MapResultMessage(jobId, KVPairsToString(pairs))
 	DialMessage(response, message.Remote)
 }
 

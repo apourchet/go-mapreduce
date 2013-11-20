@@ -1,6 +1,7 @@
 package mapreduce
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ func (kvpair KVPair) ToString() string {
 
 // TODO unmarshaling
 func ParseKVPair(pair string) KVPair {
+	fmt.Println("Parsing pair: " + pair)
 	trimmed := strings.TrimLeft(pair, "{")
 	trimmed = strings.TrimRight(trimmed, "}")
 	arr := strings.Split(trimmed, ",")
@@ -37,5 +39,14 @@ func KVPairsToString(pairs []KVPair) string {
 
 // TODO unmarshaling
 func ParseKVPairs(pairs string) []KVPair {
-	return []KVPair{{"1", "DEFAULT"}}
+	fmt.Println("Parsing pairs: " + pairs)
+	trimmed := strings.TrimLeft(pairs, "{")
+	trimmed = strings.TrimRight(trimmed, "}")
+	arr := strings.Split(trimmed, ",")
+	res := []KVPair{}
+	for _, pair := range arr {
+		kv := ParseKVPair(pair)
+		res = append(res, kv)
+	}
+	return res
 }

@@ -57,12 +57,12 @@ func (c *Controller) ReduceJobMessage(fileContent string) Message {
 	return Message{c.Remote, ReduceJob, "", fileContent}
 }
 
-func (c *Controller) MapRunMessage(fileName, key, value string) Message {
-	return Message{c.Remote, MapRun, "", fileName + ARGSEP + key + ARGSEP + value}
+func (c *Controller) MapRunMessage(key, value string) Message {
+	return Message{c.Remote, MapRun, "", key + ARGSEP + value}
 }
 
-func (c *Controller) ReduceRunMessage(fileName, key, value string) Message {
-	return Message{c.Remote, ReduceRun, "", fileName + ARGSEP + key + ARGSEP + value}
+func (c *Controller) ReduceRunMessage(key, value string) Message {
+	return Message{c.Remote, ReduceRun, "", key + ARGSEP + value}
 }
 
 // Handled by Controller
@@ -75,12 +75,12 @@ func (w *Worker) ReducerReady() Message {
 	return Message{w.Remote, ReducerReady, "", "Reducer is Ready"}
 }
 
-func (w *Worker) MapResultMessage(results string) Message {
-	return Message{w.Remote, MapResult, "", results}
+func (w *Worker) MapResultMessage(jobId, results string) Message {
+	return Message{w.Remote, MapResult, "", jobId + ARGSEP + results}
 }
 
-func (w *Worker) ReduceResultMessage(results string) Message {
-	return Message{w.Remote, ReduceResult, "", results}
+func (w *Worker) ReduceResultMessage(jobId, results string) Message {
+	return Message{w.Remote, ReduceResult, "", jobId + ARGSEP + results}
 }
 
 func (w *Worker) WorkerReadyMessage() Message {
