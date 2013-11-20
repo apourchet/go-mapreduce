@@ -31,8 +31,9 @@ func ParseKVPair(pair string) KVPair {
 func KVPairsToString(pairs []KVPair) string {
 	str := "{"
 	for _, pair := range pairs {
-		str += pair.ToString() + ","
+		str += pair.ToString() + ";"
 	}
+	str = str[:len(str)-1]
 	str += "}"
 	return str
 }
@@ -42,7 +43,7 @@ func ParseKVPairs(pairs string) []KVPair {
 	fmt.Println("Parsing pairs: " + pairs)
 	trimmed := strings.TrimLeft(pairs, "{")
 	trimmed = strings.TrimRight(trimmed, "}")
-	arr := strings.Split(trimmed, ",")
+	arr := strings.Split(trimmed, ";")
 	res := []KVPair{}
 	for _, pair := range arr {
 		kv := ParseKVPair(pair)

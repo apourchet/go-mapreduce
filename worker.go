@@ -48,13 +48,17 @@ func (w *Worker) HandleMapRun(message Message) {
 	arr := strings.Split(message.Message, ARGSEP)
 	fileName := w.GetDirectory() + "/mapper.go"
 	jobId := arr[0] // Something like the job number or something
-	// value := arr[1] // The thing that needs to be reduced
+	value := arr[1] // The thing that needs to be reduced
 
-	output, _ := exec.Command("go", "run", fileName).Output()
+	output, err := exec.Command("go", "run", fileName, value).Output()
+	if err != nil {
+		// Respond with an error
+		fmt.Println("The mapper has runtime errors: " + err.Error())
+		return
+	}
 	fmt.Println("Output of " + fileName + " is " + string(output))
 	pairs := ParseKVPairs(string(output)) // Should be a parsing of the output
 
-	// TODO Respond to the server with the result of the map
 	fmt.Println("MapperResults sent!")
 	response := w.MapResultMessage(jobId, KVPairsToString(pairs))
 	DialMessage(response, message.Remote)
@@ -62,10 +66,23 @@ func (w *Worker) HandleMapRun(message Message) {
 
 func (w *Worker) HandleReduceJob(message Message) {
 	fmt.Println("Handling Reduce Job")
+	// TODO Handle the map job here, i.e save the script onto the system in the designated folder
+	content := message.Message
+	WriteFile(w.GetDirectory()+"/reducer.go", content)
+	// Respond to the server saying that the worker is ready to map
+	fmt.Println("ReducerReady response sent!")
+	response := w.ReducerReady()
+	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) HandleReduceRun(message Message) {
 	fmt.Println("Handling Reduce Run")
+	arr := strings.Split(message.Message, ARGSEP)
+	jobId := arr[0] // Something like the job number or something
+
+	fmt.Println("ReduceResults sent!")
+	response := w.ReduceResultMessage(jobId, "{1,Reduced}")
+	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) GetDirectory() string {
