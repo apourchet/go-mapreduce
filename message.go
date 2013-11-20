@@ -30,6 +30,7 @@ type Message struct {
 
 const (
 	SEPARATOR = "#|#"
+	ARGSEP    = "#&#"
 )
 
 func (m *Message) ToString() string {
@@ -48,20 +49,20 @@ func TestMessage(fromRemote, msg string) Message {
 
 // Handled by Worker
 // Sent by Controller
-func (c *Controller) MapJobMessage(fileName string) Message {
-	return Message{c.Remote, MapJob, "", fileName}
+func (c *Controller) MapJobMessage(fileContent string) Message {
+	return Message{c.Remote, MapJob, "", fileContent}
 }
 
-func (c *Controller) ReduceJobMessage(fileName string) Message {
-	return Message{c.Remote, ReduceJob, "", "Reduce Job here"}
+func (c *Controller) ReduceJobMessage(fileContent string) Message {
+	return Message{c.Remote, ReduceJob, "", fileContent}
 }
 
-func (c *Controller) MapRunMessage(fileName string) Message {
-	return Message{c.Remote, MapRun, "", fileName}
+func (c *Controller) MapRunMessage(fileName, key, value string) Message {
+	return Message{c.Remote, MapRun, "", fileName + ARGSEP + key + ARGSEP + value}
 }
 
-func (c *Controller) ReduceRunMessage(fileName string) Message {
-	return Message{c.Remote, ReduceRun, "", "Reduce Job here"}
+func (c *Controller) ReduceRunMessage(fileName, key, value string) Message {
+	return Message{c.Remote, ReduceRun, "", fileName + ARGSEP + key + ARGSEP + value}
 }
 
 // Handled by Controller
@@ -79,7 +80,7 @@ func (w *Worker) MapResultMessage(results string) Message {
 }
 
 func (w *Worker) ReduceResultMessage(results string) Message {
-	return Message{w.Remote, ReduceResult, "", "ReduceResults here"}
+	return Message{w.Remote, ReduceResult, "", results}
 }
 
 func (w *Worker) WorkerReadyMessage() Message {

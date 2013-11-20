@@ -12,5 +12,6 @@ func main() {
 		os.Exit(1)
 		return
 	}
-	SetupServer(os.Args[1])
+	controller := SetupServer(os.Args[1])
+	controller.MapReduce([]KVPair{{"1", "A"}, {"2", "A"}, {"3", "B"}}, "maptest.go", "reducetest.go")
 }
