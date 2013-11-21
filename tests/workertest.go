@@ -12,5 +12,6 @@ func main() {
 		os.Exit(1)
 		return
 	}
-	SetupWorker(os.Args[1], os.Args[2])
+	SetupWorkerStandby(os.Args[1])
+	// SetupWorker(os.Args[1], os.Args[2])
 }

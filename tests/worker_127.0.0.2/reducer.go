@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 func main() {
-	fmt.Println("{{1,4}}")
+	key := os.Args[1]
+	value := os.Args[2]
+	fmt.Print("{" + key + "," + value + "}")
 }
