@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("Must provide the remote of the worker and server as arguments.")
 		os.Exit(1)
 		return

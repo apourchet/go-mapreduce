@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	Test        = "Test"
-	WorkerReady = "WorkerReady"
+	Test          = "Test"
+	WorkerReady   = "WorkerReady"
+	RequestWorker = "RequestWorker"
 
 	MapJob    = "MapJob"
 	ReduceJob = "ReduceJob"
@@ -19,6 +20,8 @@ const (
 
 	MapResult    = "MapResult"
 	ReduceResult = "ReduceResult"
+
+	Cleanup = "Cleanup"
 )
 
 type Message struct {
@@ -63,6 +66,14 @@ func (c *Controller) MapRunMessage(key, value string) Message {
 
 func (c *Controller) ReduceRunMessage(key, value string) Message {
 	return Message{c.Remote, ReduceRun, "", key + ARGSEP + value}
+}
+
+func (c *Controller) RequestWorkerMessage() Message {
+	return Message{c.Remote, RequestWorker, "", ""}
+}
+
+func (c *Controller) CleanupMessage() Message {
+	return Message{c.Remote, Cleanup, "", ""}
 }
 
 // Handled by Controller

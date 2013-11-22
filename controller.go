@@ -21,21 +21,26 @@ type Controller struct {
 
 	mapMutex    Mutex
 	reduceMutex Mutex
+
+	nextWorkerIndex int
 }
 
 func NewController(serverRemote string) *Controller {
 	a := make(map[string]bool)
 	b := make(map[string]bool)
-	return &Controller{serverRemote, []string{}, []string{}, []string{}, a, b, []KVPair{}, []KVPair{}, Mutex{}, Mutex{}}
+	return &Controller{serverRemote, []string{}, []string{}, []string{}, a, b, []KVPair{}, []KVPair{}, Mutex{}, Mutex{}, 0}
 }
 
 func (c *Controller) HandleMapResults(message Message) {
 	if message.Error != "" {
 		return
 	}
-	fmt.Println("Map Results have arrived!")
+	// fmt.Println("Map Results have arrived!")
 	arr := strings.Split(message.Message, ARGSEP)
 	jobId := arr[0]
+	if _, pre := c.UncompMaps[jobId]; !pre {
+		return
+	}
 	c.RemoveUnfinishedMap(jobId)
 
 	pairs := ParseKVPairs(arr[1])
@@ -46,9 +51,13 @@ func (c *Controller) HandleReduceResults(message Message) {
 	if message.Error != "" {
 		return
 	}
-	fmt.Println("Reduce Results have arrived!")
+	// fmt.Println("Reduce Results have arrived!")
 	arr := strings.Split(message.Message, ARGSEP)
 	jobId := arr[0]
+
+	if _, pre := c.UncompReduces[jobId]; !pre {
+		return
+	}
 	c.RemoveUnfinishedReduce(jobId)
 
 	pair := ParseKVPair(arr[1])
@@ -66,17 +75,27 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 		DialMessage(message, workerRemote)
 	}
 	for len(c.MapWorkers) == 0 {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 	for _, pair := range kvPairs {
 		message := c.MapRunMessage(pair.Key, pair.Value)
-		DialMessage(message, c.MapWorkers[0])
+		DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
+		c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
 	}
 	for len(c.UncompMaps) != 0 {
 		// TODO Redistribute the unfinished jobs
-		fmt.Println("Number of maps to go:", len(c.UncompMaps))
-		time.Sleep(1 * time.Second)
+		// fmt.Println("Number of maps to go:", len(c.UncompMaps))
+
+		for _, pair := range kvPairs {
+			message := c.MapRunMessage(pair.Key, pair.Value)
+			DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
+			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
+		}
+
+		time.Sleep(10 * time.Millisecond)
 	}
+	c.nextWorkerIndex = 0
+	c.MapWorkers = []string{}
 	return c.FinishedMaps
 }
 
@@ -90,17 +109,27 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 		DialMessage(message, workerRemote)
 	}
 	for len(c.ReduceWorkers) == 0 {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 	for key, vs := range kvsPairs {
 		message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
-		DialMessage(message, c.ReduceWorkers[0])
+		DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
+		c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
 	}
 	for len(c.UncompReduces) != 0 {
 		// TODO Redistribute the unfinished jobs
-		fmt.Println("Number of reduces to go:", len(c.UncompReduces))
-		time.Sleep(1 * time.Second)
+		// fmt.Println("Number of reduces to go:", len(c.UncompReduces))
+
+		for key, vs := range kvsPairs {
+			message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
+			DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
+			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
+		}
+
+		time.Sleep(10 * time.Millisecond)
 	}
+	c.nextWorkerIndex = 0
+	c.ReduceWorkers = []string{}
 	return c.FinishedReduces
 }
 
@@ -132,6 +161,7 @@ func (c *Controller) MapReduce(kvPairs []KVPair, mapJob, reduceJob string) map[s
 	for _, pair := range reduced {
 		result[pair.Key] = pair.Value
 	}
+	c.CleanupWorkers()
 
 	return result
 }
@@ -160,9 +190,9 @@ func (c *Controller) HandleMessage(message Message) {
 }
 
 func (c *Controller) WaitForWorkers() {
+	fmt.Println("Waiting for workers to connect...")
 	for len(c.IdleWorkers) == 0 {
-		fmt.Println("Waiting for workers to connect...")
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -229,4 +259,11 @@ func PrintCombineResults(combined map[string][]string) {
 		fmt.Println(key+" ->", values)
 	}
 	fmt.Println()
+}
+
+func (c *Controller) CleanupWorkers() {
+	for _, workerRemote := range c.IdleWorkers {
+		message := c.CleanupMessage()
+		DialMessage(message, workerRemote)
+	}
 }

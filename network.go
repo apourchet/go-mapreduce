@@ -50,7 +50,8 @@ func DialTest(fromRemote, toRemote, msg string) {
 	message.Message = msg
 	con, err := net.Dial("tcp", toRemote)
 	if err != nil {
-		fmt.Printf("Host not found: %s\n", err)
+		fmt.Printf("Host not found: %s\n", toRemote)
+		// fmt.Printf("Host not found: %s\n", err)
 		return
 	}
 	defer con.Close()
@@ -66,7 +67,8 @@ func DialTest(fromRemote, toRemote, msg string) {
 func DialMessage(message Message, toRemote string) {
 	con, err := net.Dial("tcp", toRemote)
 	if err != nil {
-		fmt.Printf("Host not found: %s\n", err)
+		fmt.Printf("Host not found: %s\n", toRemote)
+		// fmt.Printf("Host not found: %s\n", err)
 		return
 	}
 	defer con.Close()
