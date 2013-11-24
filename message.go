@@ -1,6 +1,7 @@
 package mapreduce
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -34,6 +35,7 @@ type Message struct {
 const (
 	SEPARATOR = "#|#"
 	ARGSEP    = "#&#"
+	MSGSEP    = "#$#"
 )
 
 func (m *Message) ToString() string {
@@ -42,7 +44,22 @@ func (m *Message) ToString() string {
 }
 func ParseMessage(messageString string) Message {
 	fstSplit := strings.Split(messageString, SEPARATOR)
+	if len(fstSplit) < 4 {
+		return Message{"", "", "Error parsing", ""}
+	}
 	return Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}
+}
+func ParseMessages(messageStrings string) []Message {
+	msgs := []Message{}
+	strs := strings.Split(messageStrings, MSGSEP)
+	if len(strs) > 1 {
+		fmt.Println("More than 1 message:", len(strs))
+		// fmt.Println
+	}
+	for _, messageString := range strs {
+		msgs = append(msgs, ParseMessage(messageString))
+	}
+	return msgs
 }
 
 // Test message

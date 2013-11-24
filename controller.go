@@ -190,6 +190,9 @@ func (c *Controller) HandleMessage(message Message) {
 	case ReduceResult:
 		c.HandleReduceResults(message)
 	default:
+		if message.Error != "" {
+			return
+		}
 		fmt.Println("Cannot handle that kind of message: " + message.Type)
 	}
 }

@@ -17,8 +17,10 @@ func SetupServer(serverRemote string) *Controller {
 	go func() {
 		for {
 			for c := <-inChannel; len(c) != 0; c = <-inChannel {
-				m := ParseMessage(string(c))
-				go controller.HandleMessage(m)
+				msgs := ParseMessages(string(c))
+				for _, m := range msgs {
+					go controller.HandleMessage(m)
+				}
 			}
 		}
 	}()
@@ -41,8 +43,10 @@ func SetupServerWithWorkers(serverRemote string, workerRemotes []string) *Contro
 	go func() {
 		for {
 			for c := <-inChannel; len(c) != 0; c = <-inChannel {
-				m := ParseMessage(string(c))
-				go controller.HandleMessage(m)
+				msgs := ParseMessages(string(c))
+				for _, m := range msgs {
+					go controller.HandleMessage(m)
+				}
 			}
 		}
 	}()
@@ -66,8 +70,10 @@ func SetupWorker(workerRemote, serverRemote string) *Worker {
 	DialMessage(readyMessage, serverRemote)
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			m := ParseMessage(string(c))
-			go worker.HandleMessage(m)
+			msgs := ParseMessages(string(c))
+			for _, m := range msgs {
+				go worker.HandleMessage(m)
+			}
 		}
 	}
 	return worker
@@ -87,8 +93,10 @@ func SetupWorkerStandby(workerRemote string) *Worker {
 	go Listen(inChannel, workerRemote, false)
 	for {
 		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			m := ParseMessage(string(c))
-			go worker.HandleMessage(m)
+			msgs := ParseMessages(string(c))
+			for _, m := range msgs {
+				go worker.HandleMessage(m)
+			}
 		}
 	}
 	return worker

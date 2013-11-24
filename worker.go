@@ -55,6 +55,9 @@ func (w *Worker) HandleMessage(message Message) {
 	case Cleanup:
 		w.HandleCleanup(message)
 	default:
+		if message.Error != "" {
+			return
+		}
 		fmt.Println("Cannot handle that kind of message: " + message.Type)
 	}
 }
