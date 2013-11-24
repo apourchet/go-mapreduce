@@ -82,14 +82,16 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 		DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
 		c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
 	}
+
 	for len(c.UncompMaps) != 0 {
-		// TODO Redistribute the unfinished jobs
-		// fmt.Println("Number of maps to go:", len(c.UncompMaps))
+		fmt.Println("Number of maps to go:", len(c.UncompMaps))
 
 		for _, pair := range kvPairs {
-			message := c.MapRunMessage(pair.Key, pair.Value)
-			DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
-			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
+			if _, pres := c.UncompMaps[pair.Key]; pres {
+				message := c.MapRunMessage(pair.Key, pair.Value)
+				DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
+				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
+			}
 		}
 
 		time.Sleep(10 * time.Millisecond)
@@ -118,14 +120,17 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 	}
 	for len(c.UncompReduces) != 0 {
 		// TODO Redistribute the unfinished jobs
-		// fmt.Println("Number of reduces to go:", len(c.UncompReduces))
+		fmt.Println("Number of reduces to go:", len(c.UncompReduces))
 
 		for key, vs := range kvsPairs {
-			message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
-			DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
-			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
+			if _, pres := c.UncompReduces[key]; pres {
+				fmt.Println(key, vs)
+				message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
+				DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
+				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
+			}
 		}
-
+		fmt.Println()
 		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0

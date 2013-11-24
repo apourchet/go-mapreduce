@@ -66,83 +66,86 @@ func (w *Worker) HandleRequestWorker(message Message) {
 }
 
 func (w *Worker) HandleMapJob(message Message) {
-	// fmt.Println("Handling Map Job")
-	// TODO Handle the map job here, i.e save the script onto the system in the designated folder
+	fmt.Println("Handling Map Job")
+
 	content := message.Message
 	WriteFile(w.GetDirectory()+"/mapper.go", content)
-	// Respond to the server saying that the worker is ready to map
-	// fmt.Println("MapperReady response sent!")
+
+	err := exec.Command("go", "build", "-o", "./"+w.GetDirectory()+"/mapper.exe", "./"+w.GetDirectory()+"/mapper.go").Run()
+	if err != nil {
+		return
+	}
+
 	response := w.MapperReady()
 	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) HandleMapRun(message Message) {
-	// fmt.Println("Handling Map Run")
-	// Handle the run here
+
 	arr := strings.Split(message.Message, ARGSEP)
-	fileName := w.GetDirectory() + "/mapper.go"
 	jobId := arr[0] // Something like the job number or something
 	if w.CheckIfJobActive(jobId) {
-		// This worker is already executing this job
 		return
 	}
 	value := arr[1] // The thing that needs to be mapped
 
-	output, err := exec.Command("go", "run", fileName, value).Output()
+	output, err := exec.Command("./"+w.GetDirectory()+"/mapper.exe", value).Output()
+
 	if err != nil {
 		// Respond with an error
 		fmt.Println("The mapper has runtime errors: " + err.Error())
 		w.RemoveActiveJob(jobId)
 		return
 	}
-	fmt.Println("Output of " + fileName + " is " + string(output))
+	// fmt.Println("Output of " + fileName + " is " + string(output))
 	pairs := ParseKVPairs(string(output)) // Should be a parsing of the output
 
-	// fmt.Println("MapperResults sent!")
 	response := w.MapResultMessage(jobId, KVPairsToString(pairs))
 	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) HandleReduceJob(message Message) {
-	// fmt.Println("Handling Reduce Job")
-	// TODO Handle the map job here, i.e save the script onto the system in the designated folder
+	fmt.Println("Handling Reduce Job")
+
+	w.ActiveJobs = make(map[string]bool)
 	content := message.Message
 	WriteFile(w.GetDirectory()+"/reducer.go", content)
-	// Respond to the server saying that the worker is ready to map
-	// fmt.Println("ReducerReady response sent!")
+	err := exec.Command("go", "build", "-o", "./"+w.GetDirectory()+"/reducer.exe", "./"+w.GetDirectory()+"/reducer.go").Run()
+	if err != nil {
+		return
+	}
 	response := w.ReducerReady()
 	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) HandleReduceRun(message Message) {
-	// fmt.Println("Handling Reduce Run")
+
 	arr := strings.Split(message.Message, ARGSEP)
-	fileName := w.GetDirectory() + "/reducer.go"
 	jobId := arr[0] // Something like the job number or the word to count
 	if w.CheckIfJobActive(jobId) {
-		// This worker is already executing this job
 		return
 	}
 	value := arr[1] // The thing that needs to be reduced
 
-	output, err := exec.Command("go", "run", fileName, jobId, value).Output()
+	output, err := exec.Command("./"+w.GetDirectory()+"/reducer.exe", jobId, value).Output()
+
 	if err != nil {
-		// Respond with an error
-		fmt.Println("The mapper has runtime errors: " + err.Error())
+		fmt.Println("The reducer has runtime errors: " + err.Error())
 		w.RemoveActiveJob(jobId)
 		return
 	}
 
-	fmt.Println("Output of " + fileName + " is " + string(output))
+	// fmt.Println("Output of " + fileName + " is " + string(output))
 	pair := ParseKVPair(string(output)) // Should be a parsing of the output
 
-	// fmt.Println("ReduceResults sent!")
 	response := w.ReduceResultMessage(jobId, pair.ToString())
 	DialMessage(response, message.Remote)
 }
 
 func (w *Worker) HandleCleanup(message Message) {
 	w.ActiveJobs = make(map[string]bool)
+	exec.Command("rm", "./"+w.GetDirectory()+"/reducer.exe").Run()
+	exec.Command("rm", "./"+w.GetDirectory()+"/mapper.exe").Run()
 	fmt.Println("Cleanup requested. Ready for next mapreduce!")
 }
 
@@ -152,5 +155,8 @@ func (w *Worker) GetDirectory() string {
 }
 
 func (w *Worker) MakeWorkerDirectory() error {
-	return exec.Command("mkdir", w.GetDirectory()).Run()
+	err := exec.Command("mkdir", w.GetDirectory()).Run()
+	exec.Command("rm", "./"+w.GetDirectory()+"/reducer.exe").Run()
+	exec.Command("rm", "./"+w.GetDirectory()+"/mapper.exe").Run()
+	return err
 }

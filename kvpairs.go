@@ -25,11 +25,17 @@ func ParseKVPair(pair string) KVPair {
 	trimmed := strings.TrimLeft(pair, "{")
 	trimmed = strings.TrimRight(trimmed, "}")
 	arr := strings.Split(trimmed, ",")
+	if len(arr) < 2 {
+		return KVPair{"", ""}
+	}
 	return KVPair{arr[0], arr[1]}
 }
 
 func KVPairsToString(pairs []KVPair) string {
 	str := "{"
+	if len(pairs) == 0 {
+		return "{}"
+	}
 	for _, pair := range pairs {
 		str += pair.ToString() + ";"
 	}

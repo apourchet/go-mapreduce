@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 )
 
 func main() {
 	value := os.Args[1]
+	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
 	ret := "{"
-	for i, word := range strings.Split(value, " ") {
+	for i, word := range reg.Split(value, -1) {
 		if i > 0 {
 			ret += ";"
 		}
