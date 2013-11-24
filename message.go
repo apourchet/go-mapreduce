@@ -23,6 +23,7 @@ const (
 	ReduceResult = "ReduceResult"
 
 	Cleanup = "Cleanup"
+	Fatal   = "Fatal"
 )
 
 type Message struct {
@@ -39,12 +40,13 @@ const (
 )
 
 func (m *Message) ToString() string {
-	return m.Remote + SEPARATOR + m.Type + SEPARATOR + m.Error + SEPARATOR + m.Message
+	return m.Remote + SEPARATOR + m.Type + SEPARATOR + m.Error + SEPARATOR + m.Message + MSGSEP
 	// return fmt.Sprintf("%s#|#%s#|#%s#|#%s", m.Remote, m.Type, m.Error, m.Message)
 }
 func ParseMessage(messageString string) Message {
 	fstSplit := strings.Split(messageString, SEPARATOR)
 	if len(fstSplit) < 4 {
+		fmt.Println("Error parsing: " + messageString)
 		return Message{"", "", "Error parsing", ""}
 	}
 	return Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}
@@ -52,12 +54,15 @@ func ParseMessage(messageString string) Message {
 func ParseMessages(messageStrings string) []Message {
 	msgs := []Message{}
 	strs := strings.Split(messageStrings, MSGSEP)
-	if len(strs) > 1 {
-		fmt.Println("More than 1 message:", len(strs))
-		// fmt.Println
-	}
 	for _, messageString := range strs {
-		msgs = append(msgs, ParseMessage(messageString))
+		if messageString == "" {
+			continue
+		}
+		newMsg := ParseMessage(messageString)
+		if newMsg.Error != "" {
+			continue
+		}
+		msgs = append(msgs, newMsg)
 	}
 	return msgs
 }

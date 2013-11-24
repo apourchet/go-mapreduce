@@ -12,10 +12,12 @@ type Worker struct {
 	ActiveJobs map[string]bool
 
 	jobMutex Mutex
+
+	outChannel chan Message
 }
 
-func NewWorker(workerRemote string) *Worker {
-	return &Worker{workerRemote, make(map[string]bool), Mutex{}}
+func NewWorker(workerRemote string, outChannel chan Message) *Worker {
+	return &Worker{workerRemote, make(map[string]bool), Mutex{}, outChannel}
 }
 
 func (w *Worker) CheckIfJobActive(jobId string) bool {
@@ -65,7 +67,7 @@ func (w *Worker) HandleMessage(message Message) {
 func (w *Worker) HandleRequestWorker(message Message) {
 	fmt.Println("This worker was requested. Sending WorkerReady message...")
 	response := w.WorkerReadyMessage()
-	DialMessage(response, message.Remote)
+	w.outChannel <- response
 }
 
 func (w *Worker) HandleMapJob(message Message) {
@@ -80,7 +82,7 @@ func (w *Worker) HandleMapJob(message Message) {
 	}
 
 	response := w.MapperReady()
-	DialMessage(response, message.Remote)
+	w.outChannel <- response
 }
 
 func (w *Worker) HandleMapRun(message Message) {
@@ -104,7 +106,7 @@ func (w *Worker) HandleMapRun(message Message) {
 	pairs := ParseKVPairs(string(output)) // Should be a parsing of the output
 
 	response := w.MapResultMessage(jobId, KVPairsToString(pairs))
-	DialMessage(response, message.Remote)
+	w.outChannel <- response
 }
 
 func (w *Worker) HandleReduceJob(message Message) {
@@ -118,7 +120,7 @@ func (w *Worker) HandleReduceJob(message Message) {
 		return
 	}
 	response := w.ReducerReady()
-	DialMessage(response, message.Remote)
+	w.outChannel <- response
 }
 
 func (w *Worker) HandleReduceRun(message Message) {
@@ -142,7 +144,7 @@ func (w *Worker) HandleReduceRun(message Message) {
 	pair := ParseKVPair(string(output)) // Should be a parsing of the output
 
 	response := w.ReduceResultMessage(jobId, pair.ToString())
-	DialMessage(response, message.Remote)
+	w.outChannel <- response
 }
 
 func (w *Worker) HandleCleanup(message Message) {

@@ -7,96 +7,48 @@ import (
 	// "strings"
 )
 
-func SetupServer(serverRemote string) *Controller {
-	fmt.Println("\n******Server initializing******")
-	fmt.Println("Server Remote: " + serverRemote)
-	inChannel := make(chan []byte)
-	controller := NewController(serverRemote)
-
-	go Listen(inChannel, serverRemote, false)
-	go func() {
-		for {
-			for c := <-inChannel; len(c) != 0; c = <-inChannel {
-				msgs := ParseMessages(string(c))
-				for _, m := range msgs {
-					go controller.HandleMessage(m)
-				}
-			}
-		}
-	}()
-	return controller
-}
-
 func SetupServerWithWorkers(serverRemote string, workerRemotes []string) *Controller {
 	fmt.Println("\n******Server initializing******")
 	fmt.Println("Server Remote: " + serverRemote)
-	inChannel := make(chan []byte)
+
+	inChannel := make(chan Message)
 	controller := NewController(serverRemote)
 
-	go Listen(inChannel, serverRemote, false)
 	requestWorker := controller.RequestWorkerMessage()
 	for _, workerRemote := range workerRemotes {
 		fmt.Println("Worker Remote: " + workerRemote)
-		DialMessage(requestWorker, workerRemote)
+		outChannel := make(chan Message)
+		go DialAndListen(workerRemote, inChannel, outChannel)
+		outChannel <- requestWorker
 	}
 
 	go func() {
 		for {
-			for c := <-inChannel; len(c) != 0; c = <-inChannel {
-				msgs := ParseMessages(string(c))
-				for _, m := range msgs {
-					go controller.HandleMessage(m)
-				}
+			for c := <-inChannel; c.Type != Fatal; c = <-inChannel {
+				go controller.HandleMessage(c)
 			}
 		}
 	}()
 	return controller
-}
-
-func SetupWorker(workerRemote, serverRemote string) *Worker {
-	fmt.Println("\n******Worker initializing******")
-	fmt.Println("Server Remote: " + serverRemote)
-	fmt.Println("Worker Remote: " + workerRemote)
-	inChannel := make(chan []byte)
-	worker := NewWorker(workerRemote)
-	err := worker.MakeWorkerDirectory()
-	if err != nil {
-		fmt.Println("Could not make worker directory: \n" + err.Error())
-		// os.Exit(1)
-	}
-	readyMessage := worker.WorkerReadyMessage()
-
-	go Listen(inChannel, workerRemote, false)
-	DialMessage(readyMessage, serverRemote)
-	for {
-		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			msgs := ParseMessages(string(c))
-			for _, m := range msgs {
-				go worker.HandleMessage(m)
-			}
-		}
-	}
-	return worker
 }
 
 func SetupWorkerStandby(workerRemote string) *Worker {
 	fmt.Println("\n******Worker initializing******")
 	fmt.Println("Worker Remote: " + workerRemote)
-	inChannel := make(chan []byte)
-	worker := NewWorker(workerRemote)
+
+	inChannel := make(chan Message)
+	outChannel := make(chan Message)
+
+	worker := NewWorker(workerRemote, outChannel)
 	err := worker.MakeWorkerDirectory()
 	if err != nil {
 		fmt.Println("Could not make worker directory: \n" + err.Error())
-		// os.Exit(1)
 	}
 
-	go Listen(inChannel, workerRemote, false)
+	go ListenStream(inChannel, outChannel, workerRemote)
 	for {
-		for c := <-inChannel; len(c) != 0; c = <-inChannel {
-			msgs := ParseMessages(string(c))
-			for _, m := range msgs {
-				go worker.HandleMessage(m)
-			}
+		for c := <-inChannel; c.Type != Fatal; c = <-inChannel {
+			go worker.HandleMessage(c)
 		}
 	}
 	return worker

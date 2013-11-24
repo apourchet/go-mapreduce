@@ -1,9 +1,10 @@
 package mapreduce
 
 import (
-	"bytes"
+	// "bytes"
 	"fmt"
 	"net"
+	"time"
 )
 
 var (
@@ -14,69 +15,63 @@ func SetVerbosity(v int) {
 	Verbosity = v
 }
 
-func Listen(inChannel chan []byte, remote string, closeChannel bool) {
+func ListenStream(inChannel, outChannel chan Message, remote string) {
 	lis, err := net.Listen("tcp", remote)
 	if err != nil {
-		inChannel <- []byte{}
+		close(inChannel)
 		return
 	}
 	defer lis.Close()
 	if Verbosity > 0 {
 		fmt.Println("Listening on remote: " + remote)
 	}
-	data := make([]byte, 5)
+	data := make([]byte, 4096*8)
 	for {
-		output := bytes.NewBuffer([]byte{})
 		con, err := lis.Accept()
 		if err != nil {
 			continue
 		}
+		fmt.Println("Got a connection!")
+		go func() {
+			for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
+				fmt.Println("Sending message through outChannel!")
+				con.Write([]byte(c.ToString()))
+			}
+		}()
 		for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
-			output.Write(data[0:n])
+			msgs := ParseMessages(string(data[:n]))
+			fmt.Println("Got a message through the connection!")
+			for _, m := range msgs {
+				inChannel <- m
+			}
 		}
-		inChannel <- output.Bytes()
-		if closeChannel {
-			close(inChannel)
-		}
-		con.Close()
+		close(outChannel)
+		close(inChannel)
 	}
 }
 
-func DialTest(fromRemote, toRemote, msg string) {
-	message := Message{}
-	message.Remote = fromRemote
-	message.Type = Test
-	message.Error = ""
-	message.Message = msg
-	con, err := net.Dial("tcp", toRemote)
-	if err != nil {
-		fmt.Printf("Host not found: %s\n", toRemote)
-		// fmt.Printf("Host not found: %s\n", err)
-		return
+func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
+	fmt.Println("Dialing and listening")
+	var con net.Conn
+	var err error
+	for con, err = net.Dial("tcp", toRemote); err != nil; con, err = net.Dial("tcp", toRemote) {
+		time.Sleep(10 * time.Millisecond)
 	}
-	defer con.Close()
-	if Verbosity > 0 {
-		fmt.Println("Dialing remote: " + toRemote)
-	}
-	in, err := con.Write([]byte(message.ToString()))
-	if err != nil {
-		fmt.Printf("Error sending data: %s, in: %d\n", err, in)
-	}
-}
+	fmt.Println("Got a connection!")
+	go func() {
+		for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
+			fmt.Println("Sending message through outChannel!")
+			con.Write([]byte(c.ToString()))
+		}
+	}()
 
-func DialMessage(message Message, toRemote string) {
-	con, err := net.Dial("tcp", toRemote)
-	if err != nil {
-		fmt.Printf("Host not found: %s\n", toRemote)
-		// fmt.Printf("Host not found: %s\n", err)
-		return
+	data := make([]byte, 500)
+	for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
+		msgs := ParseMessages(string(data[:n]))
+		fmt.Println("Got a message through the connection!")
+		for _, m := range msgs {
+			inChannel <- m
+		}
 	}
-	defer con.Close()
-	if Verbosity > 0 {
-		fmt.Println("Dialing remote: " + toRemote)
-	}
-	in, err := con.Write([]byte(message.ToString()))
-	if err != nil {
-		fmt.Printf("Error sending data: %s, in: %d\n", err, in)
-	}
+	close(inChannel)
 }

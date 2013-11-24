@@ -8,10 +8,14 @@ import (
 )
 
 type Controller struct {
-	Remote        string
-	IdleWorkers   []string
-	MapWorkers    []string
-	ReduceWorkers []string
+	Remote string
+
+	PendingWorkers map[string](chan Message)
+
+	Workers map[string](chan Message)
+
+	MapWorkers    [](chan Message)
+	ReduceWorkers [](chan Message)
 
 	UncompMaps    map[string]bool
 	UncompReduces map[string]bool
@@ -26,9 +30,25 @@ type Controller struct {
 }
 
 func NewController(serverRemote string) *Controller {
-	a := make(map[string]bool)
-	b := make(map[string]bool)
-	return &Controller{serverRemote, []string{}, []string{}, []string{}, a, b, []KVPair{}, []KVPair{}, Mutex{}, Mutex{}, 0}
+	remote := serverRemote
+	pendingWorkers := make(map[string](chan Message))
+	workers := make(map[string](chan Message))
+	mapWorkers := [](chan Message){}
+	reduceWorkers := [](chan Message){}
+	uncompMaps := make(map[string]bool)
+	uncompReduces := make(map[string]bool)
+	finishedMaps := []KVPair{}
+	finishedReduces := []KVPair{}
+
+	mapMutex := Mutex{}
+	reduceMutex := Mutex{}
+
+	nextWorkerIndex := 0
+	return &Controller{remote, pendingWorkers, workers, mapWorkers, reduceWorkers, uncompMaps, uncompReduces, finishedMaps, finishedReduces, mapMutex, reduceMutex, nextWorkerIndex}
+}
+
+func (c *Controller) AddPendingWorker(workerRemote string, outChannel chan Message) {
+	c.PendingWorkers[workerRemote] = outChannel
 }
 
 func (c *Controller) HandleMapResults(message Message) {
@@ -70,16 +90,17 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 	for _, pair := range kvPairs {
 		c.UncompMaps[pair.Key] = true
 	}
-	for _, workerRemote := range c.IdleWorkers {
-		message := c.MapJobMessage(ReadFile(mapJob))
-		DialMessage(message, workerRemote)
+	mapFile := ReadFile(mapJob)
+	for _, outChannel := range c.Workers {
+		message := c.MapJobMessage(mapFile)
+		outChannel <- message
 	}
 	for len(c.MapWorkers) == 0 {
 		time.Sleep(10 * time.Millisecond)
 	}
 	for _, pair := range kvPairs {
 		message := c.MapRunMessage(pair.Key, pair.Value)
-		DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
+		c.MapWorkers[c.nextWorkerIndex] <- message
 		c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
 	}
 
@@ -89,7 +110,7 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 		for _, pair := range kvPairs {
 			if _, pres := c.UncompMaps[pair.Key]; pres {
 				message := c.MapRunMessage(pair.Key, pair.Value)
-				DialMessage(message, c.MapWorkers[c.nextWorkerIndex])
+				c.MapWorkers[c.nextWorkerIndex] <- message
 				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
 			}
 		}
@@ -97,7 +118,7 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
-	c.MapWorkers = []string{}
+	c.MapWorkers = [](chan Message){}
 	return c.FinishedMaps
 }
 
@@ -106,16 +127,17 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 	for key, _ := range kvsPairs {
 		c.UncompReduces[key] = true
 	}
-	for _, workerRemote := range c.IdleWorkers {
-		message := c.ReduceJobMessage(ReadFile(reduceJob))
-		DialMessage(message, workerRemote)
+	reduceFile := ReadFile(reduceJob)
+	for _, outChannel := range c.Workers {
+		message := c.ReduceJobMessage(reduceFile)
+		outChannel <- message
 	}
 	for len(c.ReduceWorkers) == 0 {
 		time.Sleep(10 * time.Millisecond)
 	}
 	for key, vs := range kvsPairs {
 		message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
-		DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
+		c.ReduceWorkers[c.nextWorkerIndex] <- message
 		c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
 	}
 	for len(c.UncompReduces) != 0 {
@@ -126,7 +148,7 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 			if _, pres := c.UncompReduces[key]; pres {
 				fmt.Println(key, vs)
 				message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
-				DialMessage(message, c.ReduceWorkers[c.nextWorkerIndex])
+				c.ReduceWorkers[c.nextWorkerIndex] <- message
 				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
 			}
 		}
@@ -134,7 +156,7 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
-	c.ReduceWorkers = []string{}
+	c.ReduceWorkers = [](chan Message){}
 	return c.FinishedReduces
 }
 
@@ -175,10 +197,6 @@ func (c *Controller) MapReduce(kvPairs []KVPair, mapJob, reduceJob string) map[s
 func (c *Controller) HandleMessage(message Message) {
 	// fmt.Println("Controller handling message:\n" + message.ToString())
 	switch message.Type {
-	case Test:
-		fmt.Println("Handling Test message")
-		response := TestMessage(c.Remote, "Response to test message")
-		DialMessage(response, message.Remote)
 	case WorkerReady:
 		c.HandleNewWorker(message)
 	case MapperReady:
@@ -199,7 +217,7 @@ func (c *Controller) HandleMessage(message Message) {
 
 func (c *Controller) WaitForWorkers() {
 	fmt.Println("Waiting for workers to connect...")
-	for len(c.IdleWorkers) == 0 {
+	for len(c.Workers) == 0 {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
@@ -232,17 +250,21 @@ func (c *Controller) AddFinishedReduce(pair KVPair) {
 
 func (c *Controller) HandleNewWorker(message Message) {
 	fmt.Println("Worker is ready on remote: " + message.Remote)
-	c.IdleWorkers = append(c.IdleWorkers, message.Remote)
+	outChannel, pres := c.PendingWorkers[message.Remote]
+	if pres {
+		c.Workers[message.Remote] = outChannel
+		delete(c.PendingWorkers, message.Remote)
+	}
 }
 
 func (c *Controller) HandleMapperReady(message Message) {
 	fmt.Println("Mapper is ready!")
-	c.MapWorkers = append(c.MapWorkers, message.Remote)
+	c.MapWorkers = append(c.MapWorkers, c.Workers[message.Remote])
 }
 
 func (c *Controller) HandleReducerReady(message Message) {
 	fmt.Println("Reducer is Ready!")
-	c.ReduceWorkers = append(c.ReduceWorkers, message.Remote)
+	c.ReduceWorkers = append(c.ReduceWorkers, c.Workers[message.Remote])
 }
 
 func PrintMapResults(mapped []KVPair) {
@@ -270,8 +292,8 @@ func PrintCombineResults(combined map[string][]string) {
 }
 
 func (c *Controller) CleanupWorkers() {
-	for _, workerRemote := range c.IdleWorkers {
+	for _, outChannel := range c.Workers {
 		message := c.CleanupMessage()
-		DialMessage(message, workerRemote)
+		outChannel <- message
 	}
 }
