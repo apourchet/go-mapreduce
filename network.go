@@ -31,20 +31,21 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 		if err != nil {
 			continue
 		}
-		fmt.Println("Got a connection!")
+		fmt.Println("(LS) Got a connection!")
 		go func() {
 			for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
-				fmt.Println("Sending message through outChannel!")
+				fmt.Println("(LS) Sending message through outChannel!")
 				con.Write([]byte(c.ToString()))
 			}
 		}()
 		for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
 			msgs := ParseMessages(string(data[:n]))
-			fmt.Println("Got a message through the connection!")
 			for _, m := range msgs {
+				fmt.Println("(LS) Got a message through the connection: " + m.ToString())
 				inChannel <- m
 			}
 		}
+		fmt.Println("(LS) Closing channels")
 		close(outChannel)
 		close(inChannel)
 	}
@@ -57,21 +58,23 @@ func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
 	for con, err = net.Dial("tcp", toRemote); err != nil; con, err = net.Dial("tcp", toRemote) {
 		time.Sleep(10 * time.Millisecond)
 	}
-	fmt.Println("Got a connection!")
+
 	go func() {
 		for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
-			fmt.Println("Sending message through outChannel!")
+			fmt.Println("(DAL) Sending message through outChannel!")
 			con.Write([]byte(c.ToString()))
 		}
 	}()
 
+	fmt.Println("Got a connection!")
 	data := make([]byte, 500)
 	for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
 		msgs := ParseMessages(string(data[:n]))
-		fmt.Println("Got a message through the connection!")
 		for _, m := range msgs {
+			fmt.Println("(DAL) Got a message through the connection: " + m.ToString())
 			inChannel <- m
 		}
 	}
+	fmt.Println("(DAL) Closing channels")
 	close(inChannel)
 }

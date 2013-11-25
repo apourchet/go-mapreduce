@@ -19,14 +19,19 @@ func SetupServerWithWorkers(serverRemote string, workerRemotes []string) *Contro
 		fmt.Println("Worker Remote: " + workerRemote)
 		outChannel := make(chan Message)
 		go DialAndListen(workerRemote, inChannel, outChannel)
-		outChannel <- requestWorker
+		go func() {
+			outChannel <- requestWorker
+		}()
 	}
-
+	fmt.Println("ServerSetup: finished setting up...")
 	go func() {
 		for {
+			fmt.Println("ServerSetup: reading inChannel...")
 			for c := <-inChannel; c.Type != Fatal; c = <-inChannel {
+				fmt.Println("Controller will be handling this message!")
 				go controller.HandleMessage(c)
 			}
+			fmt.Println("ServerSetup: Finished reading inChannel...")
 		}
 	}()
 	return controller
