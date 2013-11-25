@@ -23,15 +23,15 @@ func SetupServerWithWorkers(serverRemote string, workerRemotes []string) *Contro
 			outChannel <- requestWorker
 		}()
 	}
-	fmt.Println("ServerSetup: finished setting up...")
+	// fmt.Println("ServerSetup: finished setting up...")
 	go func() {
 		for {
-			fmt.Println("ServerSetup: reading inChannel...")
+			// fmt.Println("ServerSetup: reading inChannel...")
 			for c := <-inChannel; c.Type != Fatal; c = <-inChannel {
-				fmt.Println("Controller will be handling this message!")
+				// fmt.Println("Controller will be handling this message!")
 				go controller.HandleMessage(c)
 			}
-			fmt.Println("ServerSetup: Finished reading inChannel...")
+			// fmt.Println("ServerSetup: Finished reading inChannel...")
 		}
 	}()
 	return controller
