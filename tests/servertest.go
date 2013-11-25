@@ -15,7 +15,7 @@ func main() {
 		return
 	}
 	// controller := SetupServer(os.Args[1])
-	controller := SetupServerWithWorkers(os.Args[1], []string{"127.0.0.2:8080", "127.0.0.3:8080"})
+	controller := SetupServerWithWorkers(os.Args[1], []string{"127.0.0.2:3000", "127.0.0.3:3000"})
 
 	fi, err := os.Open("reuters.txt")
 	if err != nil {

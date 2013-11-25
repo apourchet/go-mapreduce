@@ -218,7 +218,8 @@ func (c *Controller) HandleMessage(message Message) {
 func (c *Controller) WaitForWorkers() {
 	fmt.Println("Waiting for workers to connect...")
 	for len(c.Workers) == 0 {
-		time.Sleep(10 * time.Millisecond)
+		fmt.Println("Waiting for workers to connect...")
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
