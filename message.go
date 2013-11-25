@@ -119,3 +119,7 @@ func (w *Worker) ReduceResultMessage(jobId, results string) Message {
 func (w *Worker) WorkerReadyMessage() Message {
 	return Message{w.Remote, WorkerReady, "", "WorkerReady here"}
 }
+
+func FatalMessage() Message {
+	return Message("", Fatal, "", "")
+}

@@ -86,7 +86,7 @@ func (w *Worker) HandleMapJob(message Message) {
 }
 
 func (w *Worker) HandleMapRun(message Message) {
-
+	fmt.Println("Handling Map Run")
 	arr := strings.Split(message.Message, ARGSEP)
 	jobId := arr[0] // Something like the job number or something
 	if w.CheckIfJobActive(jobId) {
@@ -124,7 +124,7 @@ func (w *Worker) HandleReduceJob(message Message) {
 }
 
 func (w *Worker) HandleReduceRun(message Message) {
-
+	fmt.Println("Handling Map Run")
 	arr := strings.Split(message.Message, ARGSEP)
 	jobId := arr[0] // Something like the job number or the word to count
 	if w.CheckIfJobActive(jobId) {

@@ -45,6 +45,7 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 				inChannel <- m
 			}
 		}
+		outChannel <- FatalMessage()
 		fmt.Println("(LS) Closing channels")
 		close(outChannel)
 		close(inChannel)
