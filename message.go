@@ -121,5 +121,5 @@ func (w *Worker) WorkerReadyMessage() Message {
 }
 
 func FatalMessage() Message {
-	return Message("", Fatal, "", "")
+	return Message{"", Fatal, "", ""}
 }
