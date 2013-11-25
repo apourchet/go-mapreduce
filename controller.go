@@ -115,7 +115,7 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 			}
 		}
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
 	c.MapWorkers = [](chan Message){}
@@ -153,7 +153,7 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 			}
 		}
 		fmt.Println()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
 	c.ReduceWorkers = [](chan Message){}
