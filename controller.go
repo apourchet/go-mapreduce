@@ -17,8 +17,8 @@ type Controller struct {
 	MapWorkers    [](chan Message)
 	ReduceWorkers [](chan Message)
 
-	UncompMaps    map[string]bool
-	UncompReduces map[string]bool
+	UncompMaps    map[string]string
+	UncompReduces map[string][]string
 
 	FinishedMaps    []KVPair
 	FinishedReduces []KVPair
@@ -35,8 +35,8 @@ func NewController(serverRemote string) *Controller {
 	workers := make(map[string](chan Message))
 	mapWorkers := [](chan Message){}
 	reduceWorkers := [](chan Message){}
-	uncompMaps := make(map[string]bool)
-	uncompReduces := make(map[string]bool)
+	uncompMaps := make(map[string]string)
+	uncompReduces := make(map[string][]string)
 	finishedMaps := []KVPair{}
 	finishedReduces := []KVPair{}
 
@@ -88,7 +88,7 @@ func (c *Controller) HandleReduceResults(message Message) {
 func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 	fmt.Println("Mapping: " + mapJob)
 	for _, pair := range kvPairs {
-		c.UncompMaps[pair.Key] = true
+		c.UncompMaps[pair.Key] = pair.Value
 	}
 	mapFile := ReadFile(mapJob)
 	for _, outChannel := range c.Workers {
@@ -106,15 +106,13 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 
 	for len(c.UncompMaps) != 0 {
 		fmt.Println("Number of maps to go:", len(c.UncompMaps))
-
-		for _, pair := range kvPairs {
-			if _, pres := c.UncompMaps[pair.Key]; pres {
-				message := c.MapRunMessage(pair.Key, pair.Value)
-				c.MapWorkers[c.nextWorkerIndex] <- message
-				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
-			}
+		for key, value := range c.UncompMaps {
+			// startTime := time.Now()
+			message := c.MapRunMessage(key, value)
+			c.MapWorkers[c.nextWorkerIndex] <- message
+			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.MapWorkers)
+			// fmt.Println(time.Since(startTime).Seconds())
 		}
-
 		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
@@ -124,8 +122,8 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 
 func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KVPair {
 	fmt.Println("Reducing!")
-	for key, _ := range kvsPairs {
-		c.UncompReduces[key] = true
+	for key, vs := range kvsPairs {
+		c.UncompReduces[key] = vs
 	}
 	reduceFile := ReadFile(reduceJob)
 	for _, outChannel := range c.Workers {
@@ -144,14 +142,14 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 		// TODO Redistribute the unfinished jobs
 		fmt.Println("Number of reduces to go:", len(c.UncompReduces))
 
-		for key, vs := range kvsPairs {
-			if _, pres := c.UncompReduces[key]; pres {
-				message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
-				c.ReduceWorkers[c.nextWorkerIndex] <- message
-				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
-			}
+		for key, vs := range c.UncompReduces {
+			message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
+			// startTime := time.Now()
+			c.ReduceWorkers[c.nextWorkerIndex] <- message
+			// fmt.Println(time.Since(startTime).Seconds())
+			c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
 		}
-		fmt.Println()
+		// fmt.Println()
 		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0

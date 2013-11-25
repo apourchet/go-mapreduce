@@ -11,13 +11,13 @@ func SetupServerWithWorkers(serverRemote string, workerRemotes []string) *Contro
 	fmt.Println("\n******Server initializing******")
 	fmt.Println("Server Remote: " + serverRemote)
 
-	inChannel := make(chan Message)
+	inChannel := make(chan Message, 100)
 	controller := NewController(serverRemote)
 
 	requestWorker := controller.RequestWorkerMessage()
 	for _, workerRemote := range workerRemotes {
 		fmt.Println("Worker Remote: " + workerRemote)
-		outChannel := make(chan Message, 10)
+		outChannel := make(chan Message)
 		controller.AddPendingWorker(workerRemote, outChannel)
 		go DialAndListen(workerRemote, inChannel, outChannel)
 		go func() {
@@ -38,8 +38,8 @@ func SetupWorkerStandby(workerRemote string) *Worker {
 	fmt.Println("\n******Worker initializing******")
 	fmt.Println("Worker Remote: " + workerRemote)
 
-	inChannel := make(chan Message, 10)
-	outChannel := make(chan Message, 10)
+	inChannel := make(chan Message, 100)
+	outChannel := make(chan Message, 100)
 
 	worker := NewWorker(workerRemote, outChannel)
 	go ListenStream(inChannel, outChannel, workerRemote)
