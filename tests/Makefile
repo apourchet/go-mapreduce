@@ -5,3 +5,8 @@ worker:
 .PHONY: server
 server: 
 	go run servertest.go localhost:3000
+
+.PHONY: all
+all:
+	go build -o executables/worker workertest.go
+	go build -o executables/server servertest.go
