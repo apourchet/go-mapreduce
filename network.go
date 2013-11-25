@@ -34,7 +34,7 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 		fmt.Println("(LS) Got a connection!")
 		go func() {
 			for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
-				fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
+				// fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
 				con.Write([]byte(c.ToString()))
 			}
 		}()
@@ -62,7 +62,7 @@ func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
 
 	go func() {
 		for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
-			fmt.Println("(DAL) Sending message through outChannel: " + c.ToString())
+			// fmt.Println("(DAL) Sending message through outChannel: " + c.ToString())
 			con.Write([]byte(c.ToString()))
 		}
 	}()
