@@ -152,11 +152,12 @@ func (w *Worker) HandleCleanup(message Message) {
 	exec.Command("rm", "./"+w.GetDirectory()+"/reducer.exe").Run()
 	exec.Command("rm", "./"+w.GetDirectory()+"/mapper.exe").Run()
 	fmt.Println("Cleanup requested. Ready for next mapreduce!")
+	w.outChannel <- FatalMessage()
 }
 
 func (w *Worker) GetDirectory() string {
 	ip := strings.Split(w.Remote, ":")[0]
-	return "worker_" + ip
+	return ip
 }
 
 func (w *Worker) MakeWorkerDirectory() error {

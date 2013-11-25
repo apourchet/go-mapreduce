@@ -32,12 +32,12 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 			continue
 		}
 		fmt.Println("(LS) Got a connection!")
-		go func() {
-			for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
-				// fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
-				con.Write([]byte(c.ToString()))
-			}
-		}()
+		// go func() {
+		// 	for c := <-outChannel; c.Type != Fatal; c = <-outChannel {
+		// 		// fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
+		// 		con.Write([]byte(c.ToString()))
+		// 	}
+		// }()
 		for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
 			msgs := ParseMessages(string(data[:n]))
 			for _, m := range msgs {
@@ -57,7 +57,7 @@ func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
 	var con net.Conn
 	var err error
 	for con, err = net.Dial("tcp", toRemote); err != nil; con, err = net.Dial("tcp", toRemote) {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	go func() {
