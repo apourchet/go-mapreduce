@@ -46,7 +46,8 @@ func (m *Message) ToString() string {
 func ParseMessage(messageString string) Message {
 	fstSplit := strings.Split(messageString, SEPARATOR)
 	if len(fstSplit) < 4 {
-		fmt.Println("Error parsing: " + messageString)
+		// fmt.Println("Error parsing: " + messageString)
+		fmt.Println("Error parsing message...")
 		return Message{"", "", "Error parsing", ""}
 	}
 	return Message{fstSplit[0], fstSplit[1], fstSplit[2], fstSplit[3]}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 )
 
 func main() {
@@ -36,7 +37,8 @@ func main() {
 			pairs = append(pairs, KVPair{arr[0], arr[2]})
 		}
 	}
-
+	startTime := time.Now()
 	controller.MapReduce(pairs, "maptest.go", "reducetest.go")
+	fmt.Println(time.Since(startTime).Seconds())
 	// controller.MapReduce([]KVPair{{"1", "A B C"}, {"2", "A"}, {"3", "B"}}, "maptest.go", "reducetest.go")
 }
