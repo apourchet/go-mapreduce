@@ -115,7 +115,7 @@ func (c *Controller) Map(kvPairs []KVPair, mapJob string) []KVPair {
 			}
 		}
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
 	c.MapWorkers = [](chan Message){}
@@ -146,14 +146,13 @@ func (c *Controller) Reduce(kvsPairs map[string][]string, reduceJob string) []KV
 
 		for key, vs := range kvsPairs {
 			if _, pres := c.UncompReduces[key]; pres {
-				fmt.Println(key, vs)
 				message := c.ReduceRunMessage(key, fmt.Sprintf("%s", vs))
 				c.ReduceWorkers[c.nextWorkerIndex] <- message
 				c.nextWorkerIndex = (c.nextWorkerIndex + 1) % len(c.ReduceWorkers)
 			}
 		}
 		fmt.Println()
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 	c.nextWorkerIndex = 0
 	c.ReduceWorkers = [](chan Message){}
@@ -178,9 +177,9 @@ func (c *Controller) MapReduce(kvPairs []KVPair, mapJob, reduceJob string) map[s
 	c.WaitForWorkers()
 
 	mapped := c.Map(kvPairs, mapJob)
-	PrintMapResults(mapped)
+	// PrintMapResults(mapped)
 	combined := Combine(mapped)
-	PrintCombineResults(combined)
+	// PrintCombineResults(combined)
 	reduced := c.Reduce(combined, reduceJob)
 	PrintReduceResults(reduced)
 

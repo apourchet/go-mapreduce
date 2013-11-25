@@ -25,7 +25,7 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 	if Verbosity > 0 {
 		fmt.Println("Listening on remote: " + remote)
 	}
-	data := make([]byte, 4096*8)
+	data := make([]byte, 4096*8*8)
 	for {
 		con, err := lis.Accept()
 		if err != nil {
@@ -33,10 +33,10 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 		}
 		fmt.Println("(LS) Got a connection!")
 		go func() {
-			var err error
-			for c := <-outChannel; c.Type != Fatal && err == nil; c = <-outChannel {
+			fmt.Println("(LS) Listening to outChannel!")
+			for c, ok := <-outChannel; c.Type != Fatal && ok; c, ok = <-outChannel {
 				// fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
-				_, err = con.Write([]byte(c.ToString()))
+				con.Write([]byte(c.ToString()))
 			}
 		}()
 		for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
@@ -46,10 +46,10 @@ func ListenStream(inChannel, outChannel chan Message, remote string) {
 				inChannel <- m
 			}
 		}
-		outChannel <- FatalMessage()
 		fmt.Println("(LS) Closing channels")
-		close(outChannel)
-		close(inChannel)
+		outChannel <- FatalMessage()
+		// close(outChannel)
+		// close(inChannel)
 	}
 }
 
@@ -62,15 +62,14 @@ func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
 	}
 
 	go func() {
-		var err error
-		for c := <-outChannel; c.Type != Fatal && err == nil; c = <-outChannel {
-			// fmt.Println("(LS) Sending message through outChannel: " + c.ToString())
-			_, err = con.Write([]byte(c.ToString()))
+		for c, ok := <-outChannel; c.Type != Fatal && ok; c, ok = <-outChannel {
+			// fmt.Println("(DAL) Sending message through outChannel: " + c.ToString())
+			con.Write([]byte(c.ToString()))
 		}
 	}()
 
 	fmt.Println("Got a connection!")
-	data := make([]byte, 500)
+	data := make([]byte, 4096*8*8)
 	for n, err := con.Read(data); err == nil; n, err = con.Read(data) {
 		msgs := ParseMessages(string(data[:n]))
 		for _, m := range msgs {
@@ -79,5 +78,5 @@ func DialAndListen(toRemote string, inChannel, outChannel chan Message) {
 		}
 	}
 	fmt.Println("(DAL) Closing channels")
-	close(inChannel)
+	// close(inChannel)
 }

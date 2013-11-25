@@ -37,6 +37,6 @@ func main() {
 		}
 	}
 
-	// controller.MapReduce(pairs, "maptest.go", "reducetest.go")
-	controller.MapReduce([]KVPair{{"1", "A B C"}, {"2", "A"}, {"3", "B"}}, "maptest.go", "reducetest.go")
+	controller.MapReduce(pairs, "maptest.go", "reducetest.go")
+	// controller.MapReduce([]KVPair{{"1", "A B C"}, {"2", "A"}, {"3", "B"}}, "maptest.go", "reducetest.go")
 }
